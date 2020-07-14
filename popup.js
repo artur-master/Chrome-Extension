@@ -9,16 +9,6 @@ function validEmail(email) {
     return re.test(email);
 };
 
-/*
-function validApiUrl(url) {
-    var pos = url.trim().indexOf('.com');
-    if (pos === -1)
-        return '';
-    else
-        return url.substring(0, pos + 5);
-}
-*/
-
 // onLoad
 window.onload = function() 
 {
