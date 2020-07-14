@@ -12,7 +12,7 @@ function validEmail(email) {
 // onLoad
 window.onload = function() 
 {
-    $("#login_action").on("click", async function () {
+    $("#login_action").on("click", async function(){
         $("#login_data_err").hide();
 
         if (!validEmail($("#login_mail").val().trim())) {
@@ -34,7 +34,7 @@ window.onload = function()
         }
     });
 
-    $("#api_type").on("change", function (event) {
+    $("#api_type").on("change", function(event){
         var type = event.target.value;
         if (type === "none"){
             $('.apirow').css('display', 'none');
@@ -44,7 +44,7 @@ window.onload = function()
         }
     });
 
-    $("#add_account").on("click", function () {
+    $("#add_account").on("click", function(){
         popupName = "add";
         editAccount = "";
         $("#no_logged_in").hide();
@@ -52,7 +52,7 @@ window.onload = function()
         $("#add_edit_label").text("Add Account");
     });
 
-    $("body").on("click", ".edit-account", function() {
+    $("body").on("click", ".edit-account", function(){
         popupName = "edit";
         $("#no_logged_in").hide();
         $("#account_modal").show();
@@ -65,7 +65,7 @@ window.onload = function()
         $("#contact_list").val(val.list);
     });
     
-    $("body").on("change", ".check-account", function(event) {
+    $("body").on("change", ".check-account", function(event){
         var account_name = $(this).attr("id").replace("check_", "");
         accountList[account_name].checked = event.currentTarget.checked;
         backgroundPage.updateAccountList(accountList);
