@@ -16,11 +16,19 @@ function onActive(email){
     return fetch(ajaxurlpagepath + "usersinput.php",{email: email})
             .then(function(response){
                 if(response.status == 200) {
-                    isLoged = true;
                     chrome.storage.local.set({ "registerpage": email });
+                    isLoged = true;
                     lastRunTime = new Date();
-
-                    return {state:true}
+                    lastState = { popupName: "main",  active: false };
+                    return {
+                        state:true, 
+                        data:{
+                            isLoged: true,
+                            state: lastState,                        
+                            accountList: accountList,
+                            lastChecked: lastRunTime.toLocaleString("en-US")
+                        }
+                    }
                 }
                 return {state: false, error: "Invalid login info."}
             })
@@ -53,9 +61,8 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
                 }
                 else{
                     chrome.storage.local.get({"registerpage": ""}, function (items) {
-                        console.log(items.registerpage);
                         if(items.registerpage === "")
-                            sendResponse({isLoged: false});
+                            sendResponse({isLoged: false, popupName: "login"});
                         else{
                             isLoged = true;
                             lastState = { popupName: "main",  active: false };

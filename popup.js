@@ -26,9 +26,7 @@ window.onload = function()
         var result = await backgroundPage.onActive(email);
         
         if(result.state){
-            $("#user_login_wrapper").hide();
-            $("#no_logged_in").show();
-            $("#last_checked").html(new Date());
+            login(result.data);
         }
         else{
             $("#login_data_err").show();
@@ -113,9 +111,7 @@ window.onload = function()
         $("#account_modal").hide();
     });
 
-    chrome.runtime.sendMessage({ from: "popup", action: "get_laststate" }, function (result) {
-        if (chrome.runtime.lastError) return;
-
+    function login(result){
         isLoged = result.isLoged;
         if(!isLoged){
             $("#user_login_wrapper").show();
@@ -175,6 +171,11 @@ window.onload = function()
             default:
                 return;
         }
+    }
+
+    chrome.runtime.sendMessage({ from: "popup", action: "get_laststate" }, function (response) {
+        if (chrome.runtime.lastError) return;
+        login(response);
     });
 }
 
