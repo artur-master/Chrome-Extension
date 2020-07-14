@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8>
+    <!-- there are rendering bugs when styles aren't inline... -->
+    <style>
+        body {
+            font: normal 14px/16px helvetica, aria, sans-serif;
+        }
+
+        div,
+        p {
+            margin: 0;
+            padding: 0;
+        }
+
+        a {
+            color: #3681b3;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #265c80;
+        }
+
+        a:active {
+            color: #000;
+        }
+
+        h4 {
+            font-size: 20px;
+            padding-left: 20px;
+            /* background: url(/icon/icon48x48.png) no-repeat 340px center; */
+            margin: 0;
+            padding-top: 25px;
+            padding-bottom: 25px;
+        }
+
+        #wrap {
+            width: 300px;
+            padding-top: 9px;
+            font-size: 16px;
+            color: #888;
+        }
+
+        #wrap>div {
+            display: none;
+        }
+
+        #wrap>#loading {
+            display: block;
+        }
+
+        #loading .loader {
+            position: relative;
+            border-top: 16px dotted #000;
+            height: 9px;
+        }
+
+        #loading .bar {
+            position: absolute;
+            top: -21px;
+            left: 0;
+            height: 30px;
+            width: 12%;
+            background: #fff url(loader.gif) scroll no-repeat center right;
+        }
+
+        p {
+            word-wrap: break-word;
+        }
+
+        .error {
+            margin-top: 1em;
+            font-weight: bold;
+            color: #b33;
+        }
+
+        .error a {
+            color: #f75;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .row {
+            padding-bottom: 5px;
+        }
+
+        input[type=text],
+        input[type=number],
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        input[type=checkbox] {
+            margin-top: 10px;
+            margin-left: 0;
+            height: 16px;
+            width: 16px;
+        }
+
+        label {
+            padding: 10px 12px 10px 0;
+            display: inline-block;
+        }
+
+        input[type=submit] {
+            background-color: #000;
+            color: white;
+            padding: 12px 10px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 20px auto 0 auto;
+            display: inline-block;
+        }
+
+        input[type=submit]:hover {
+            background-color: #111;
+        }
+
+        input[type=button] {
+            background-color: #a0a0a0;
+            color: white;
+            padding: 12px 56px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 20px auto 0 auto;
+            float: right;
+            display: block;
+        }
+
+        input[type=button]:hover {
+            background-color: #8a8a8a;
+        }
+
+        .container {
+            border-radius: 5px;
+            background-color: #f2f2f2;
+            padding: 5px 20px;
+            width: 400px;
+        }
+
+        .account-container {
+            border-radius: 5px;
+            padding: 10px 20px;
+            width: 100%;
+            border: #9e9595 solid 1px;
+            margin-bottom: 1rem;
+        }
+
+        .account-container .row {
+            padding: 0;
+        }
+
+        .account-container label {
+            padding: 0;
+            display: inline-block;
+        }
+
+        .m-0 {
+            margin: 0 !important;
+        }
+
+        .mt-1 {
+            margin-top: 10px;
+        }
+
+        .d-flex {
+            display: flex !important;
+        }
+
+        .align-items-center {
+            align-items: center !important;
+        }
+
+        .api-container {
+            border-radius: 5px;
+            padding: 0 20px;
+            width: 100%;
+            border: #9e9595 solid 1px;
+        }
+
+        .col-10 {
+            float: left;
+            width: 10%;
+            /* margin-top: 6px; */
+        }
+
+        .col-20 {
+            float: left;
+            width: 20%;
+            /* margin-top: 6px; */
+        }
+
+        .col-30 {
+            float: left;
+            width: 30%;
+            /* margin-top: 6px; */
+        }
+
+        .col-50 {
+            float: left;
+            width: 50%;
+            /* margin-top: 6px; */
+        }
+
+        .col-70 {
+            float: left;
+            width: 70%;
+            /* margin-top: 6px; */
+        }
+
+        .editcampaign {
+            text-decoration: underline;
+            width: 10%;
+            cursor: pointer;
+            display: none;
+        }
+
+        .edit-account {
+            text-decoration: underline;
+            width: 100%;
+            cursor: pointer;
+            color: blue;
+            text-align: right;
+        }
+
+        .add-account {
+            text-decoration: underline;
+            width: 100%;
+            cursor: pointer;
+            color: blue;
+            text-align: right;
+        }
+
+        .apirow {
+            display: none;
+        }
+
+
+        /* Clear floats after the columns */
+        .row:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        input.rad {
+            vertical-align: middle;
+            margin-top: 0;
+        }
+
+        #promoLinks span {
+            color: #707070;
+        }
+
+        #login_mail {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        #login_action {
+            color: #fff;
+            background-color: #343a40;
+            border-color: #343a40;
+            display: inline-block;
+            font-weight: 400;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            border: 1px solid transparent;
+            padding: .375rem .75rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            border-radius: .25rem;
+            width: 100%;
+        }
+
+        #login_data_err {
+            text-align: center;
+            width: 100%;
+            color: #ffffff;
+            background: #343a40;
+            border-radius: 5px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 3px 3px 10px #cecccc;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        #user_login_wrapper {
+            display: block;
+        }
+
+        #no_logged_in {
+            display: none;
+        }
+
+        #add_account_modal {
+            display: none;
+        }
+        #account_name_err,
+        #google_sheet_err {
+            color: red;
+            padding-left: 15px;
+            display: none;
+        }
+        .check-account {
+            margin:0 10px !important;
+        }
+    </style>
+</head>
+
+<body>
+    <h4>FP Affiliate Extractor</h4>
+    <div class="container">
+        <div id="user_login_wrapper">
+            <form action="" id="form">
+                <div class="row">
+                    <p id="login_data_err">Invalid login info</p>
+                    <input type="text" placeholder="Enter your purchase email ..." class="form-control" id="login_mail">
+                    <button type="button" id="login_action">Activate App</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="no_logged_in">
+            <form action="" id="form">
+                <div class="row d-flex align-items-center">
+                    <input type="checkbox" id="active" style="margin:0; margin-right: 10px;" />
+                    <label for="active">Active:</label>
+                </div>
+                <div class="row d-flex align-items-center">
+                    <label for="time_interval" style="white-space: nowrap;">Time Interval (min):</label>
+                    <input id="time_interval" title="Time interval in minutes" type="number" value="">
+                </div>
+                <div class="account-container">
+                    <div class="row d-flex">
+                        <div class="col-70">
+                            <label >FP Accounts</label>
+                        </div>
+                        <div class="col-30">
+                            <label class="add-account" id="add_account" for="">Add Account</label>
+                        </div>
+                    </div>
+                    <div id="account_list"></div>
+                </div>
+                <div class="api-container">
+                    <div class="row">
+                        <div class="col-100">
+                            <label for="api_type">API Integration</label>
+                        </div>
+                        <div class="col-100">
+                            <select id="api_type" style="height: 35px; width: 88%;">
+                                <option value="none" selected>None</option>
+                                <option value="ac">Active Campaign</option>
+                            </select>
+                            <label class="editcampaign" id="campaign_edit" for="">Edit</label>
+                        </div>
+                    </div>
+                    <div class="row apirow">
+                        <div class="col-30">
+                            <label for="api_key">API Key</label>
+                        </div>
+                        <div class="col-70">
+                            <input id="api_key" title="Your API key" type="text" value="" placeholder="Your API key">
+                        </div>
+                    </div>
+                    <div class="row apirow">
+                        <div class="col-30">
+                            <label for="api_url">API Url</label>
+                        </div>
+                        <div class="col-70">
+                            <input id="api_url" title="Your API Url" type="text" value="" placeholder="Your API Url">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <input type="submit" value="Check now" id="save" style="width: 48%;">
+                    <input type="submit" value="Save" id="save2" style="width: 50%;float: right">
+                    <div style="margin-top: 20px;">
+                        Last checked: <span id="last_checked"></span>
+                    </div>
+                </div>
+                <!-- <div class="row">
+                <label style="padding-bottom: 2px;">Check out my links below:</label>
+                <hr>
+                <div id="promoLinks" style="padding-top: 2px;">
+                    <a href="https://smartbusinesstrends.com">Chris Fong</a> | <a href="https://sbt.link/fbgroup/lmaffiliateextractor">Join the FB Group</a> | <a href="https://smartbusinesstrends.com/contact-us">Get Support</a>
+                </div>
+            </div> -->
+            </form>
+        </div>
+
+        <div id="account_modal">
+            <form id="account_form">
+                <div class="row">
+                    <div class="col-100">
+                        <label id="add_edit_label" style="font-weight: bold;"></label>
+                    </div>
+                </div>
+
+                <label>First Promoter Account URL:</label>
+
+                <div class="d-flex">
+                    <input id="account_name" type="text" value="" placeholder="Add your account name ...">
+                    <label style="text-align: right">.firstpromoter.com</label>
+                </div>
+                <p id="account_name_err"></p>
+
+                <label>Googel Sheet URL:</label>
+                <input id="gsheet_url" type="text" value="" placeholder="https://docs.google.com/spreadsheets/...">
+                <p id="google_sheet_err"></p>
+
+                <div class="row d-flex align-items-center mt-1">
+                    <div class="col-30">
+                        <label>Add to List:</label>
+                    </div>
+                    <div class="col-70">
+                        <select id="contact_list" style="height: 35px; width: 80%;">
+                            <option value="0">Please choose a list</option>
+                        </select>
+                        <label id="contact_refresh" for="contact_list"
+                            style="width: 10%; cursor: pointer;margin-left: 10px; font-size: 18px;">&#x21bb;</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <input type="submit" value="Save" style="width: 20%;float: left;" />
+                    <p id="back_btn" style="width:20%;float:right;margin-top:30px;border:1px solid;cursor: pointer;text-align: center;">Back</p>
+                </div>
+                <!-- <div class="row">
+                <hr>
+                <div id="promoLinks" style="padding-top: 2px;">
+                    <a href="https://smartbusinesstrends.com">Chris Fong</a> | <a href="https://sbt.link/fbgroup/lmaffiliateextractor">Join the FB Group</a> | <a href="https://smartbusinesstrends.com/contact-us">Get Support</a>
+                </div>
+            </div> -->
+            </form>
+        </div>
+    </div>
+    <!-- JavaScript and HTML must be in separate files for security. -->
+    <script src="jquery-3.2.1.min.js"></script>
+    <script src="popup.js"></script>
+</body>
+
+</html>
