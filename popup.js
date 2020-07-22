@@ -1,32 +1,40 @@
 var backgroundPage = chrome.extension.getBackgroundPage();
-var isLoged = false;
+
+var accountsList, lastRunTime;
+
 var popupName = "login";
-var accountList = {};
-var editAccount = "";
+var api_type = "none";
+var editAccount;
+
+var states = {};
 
 function validEmail(email) {
     var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return re.test(email);
 };
-
 // onLoad
 window.onload = function() 
 {
     $("#login_action").on("click", async function(){
         $("#login_data_err").hide();
 
-        if (!validEmail($("#login_mail").val().trim())) {
+        var email = $("#login_mail").val().trim().replace(/['"]+/g, '');
+
+        if (!validEmail(email)) {
             $("#login_data_err").show(); 
             $("#login_data_err").html("Invalid email address.");
             return;
         }
-        // Allow users to use app.
-        var email = $("#login_mail").val().trim().replace(/['"]+/g, '');
 
-        var result = await backgroundPage.onActive(email);
+        $("#login_action").prop('value', "Activating App...");        
+        $("#login_action").prop('disabled', true);
+
+        var result = await backgroundPage.onActiveLogin(email, true);
         
+        $("#login_action").prop('value', "Activate App");
         if(result.state){
-            login(result.data);
+            states = result.data;
+            showMainModal();
         }
         else{
             $("#login_data_err").show();
@@ -34,47 +42,96 @@ window.onload = function()
         }
     });
 
+    $("#save_btn").on("click", function(){
+        $("#check_now").prop("disabled", false);
+        var active = $("#active").prop( "checked");
+        var interval = $("#time_interval").val() || 0;
+        api_type = $("#api_type").val();
+        var api_url="", api_key="";
+        if(api_type == "ac"){
+            api_url = $("#api_url").val(); 
+            api_key = $("#api_key").val();
+        }
+
+        backgroundPage.saveData({
+            isActive: active,
+            timeInterval:interval,
+            apiType: api_type,
+            apiUrl: api_url,
+            apiKey: api_key,
+            accountsList: accountsList
+        });
+    });
+
+    $("#check_now").on("click", function(){
+        api_type = $("#api_type").val();
+        var api_url="", api_key="";
+        if(api_type == "ac"){
+            api_url = $("#api_url").val(); 
+            api_key = $("#api_key").val();
+        }
+
+        $("#check_now").val("Checking...");
+        $("#check_now").prop("disabled", true);
+        $("#save_btn").prop("disabled", true);
+        backgroundPage.checkState().then(res=>{
+            states = res;
+            $("#check_now").val("Check Now");
+            showMainModal();
+        });
+    });
+
     $("#api_type").on("change", function(event){
-        var type = event.target.value;
-        if (type === "none"){
-            $('.apirow').css('display', 'none');
-        }
-        else{
-            $('.apirow').css('display', 'block');
-        }
+        api_type = event.target.value;
+        $('.apirow').css('display', api_type === "none"?'none':'block');        
     });
 
     $("#add_account").on("click", function(){
+        var mainState = getCurrentState();
         popupName = "add";
-        editAccount = "";
+        editAccount = -1;
+        states = {popupName, mainState}
+
         $("#no_logged_in").hide();
-        $("#account_modal").show();
-        $("#add_edit_label").text("Add Account");
+        showAddEditModal();
     });
 
     $("body").on("click", ".edit-account", function(){
-        popupName = "edit";
-        $("#no_logged_in").hide();
-        $("#account_modal").show();
-        $("#add_edit_label").text("Edit Account");
-        editAccount = $(this).attr("id").replace("edit_", "");
+        var mainState = getCurrentState();
+        popupName = "edit";        
+        editAccount = parseInt($(this).attr("id").replace("edit_", ""), 10);
+        var acc = accountsList[editAccount];
+        states = {
+            popupName, mainState,
+            account_name:acc.name,
+            gsheet_url: acc.gsheet.url,
+            contact_list: acc.list
+        }
 
-        var val = accountList[editAccount];
-        $("#account_name").val(editAccount);
-        $("#gsheet_url").val(val.url);
-        $("#contact_list").val(val.list);
+        $("#no_logged_in").hide();
+        showAddEditModal();
+    });
+
+    $("body").on("click", ".delete-account", function(){
+        var num = parseInt($(this).attr("id").replace("del_", ""), 10);
+        if(confirm("Will you really remove this account?")){
+            accountsList.splice(num, 1);
+            showMainModal();
+        }        
     });
     
     $("body").on("change", ".check-account", function(event){
-        var account_name = $(this).attr("id").replace("check_", "");
-        accountList[account_name].checked = event.currentTarget.checked;
-        backgroundPage.updateAccountList(accountList);
+        editAccount = parseInt($(this).attr("id").replace("check_", ""), 10);
+        accountsList[editAccount].checked = event.currentTarget.checked;
+        if (accountsList[editAccount].status !== "New ") accountsList[editAccount].status = "Updated";
+        
+        showMainModal();
     });
 
-    $("#account_form").submit(function(event){        
-        var account_name = this.account_name.value;
-        var gsheet_url = this.gsheet_url.value;
-        var contact_list = this.contact_list.value;
+    $("#save_account").on('click', function(){
+        var account_name = $("#account_name").val().trim();
+        var gsheet_url = $("#gsheet_url").val().trim();
+        var ac_list = $("#contact_list").val();
         
         var invalid = false;
         $("#account_name_err").hide(); $("#google_sheet_err").hide();
@@ -88,128 +145,188 @@ window.onload = function()
             $("#google_sheet_err").show();
             $("#google_sheet_err").text("Please add google sheet url.");
         }
-        if(invalid) { event.preventDefault(); return }
-
-        if(editAccount !== "") //edit
-            delete accountList[editAccount];
-
-        if(accountList[account_name] === undefined){
-            accountList[account_name] = {url: gsheet_url.trim(), list: contact_list, checked: false}
-            backgroundPage.updateAccountList(accountList);
-            popupName = "main";
+        if(ac_list == null){
+            invalid = true;
+            alert("please select AC list");
         }
-        else{
-            $("#account_name_err").text("Duplicated account name.");
-            $("#account_name_err").show();
-            event.preventDefault();
-        }
+
+        if(invalid) return;
+        $("#save_account").val("Saving...");
+        $("#save_account").prop('disabled', true);
+        backgroundPage.getSpreadSheet(gsheet_url).then(result=>{
+            if(!result.status){
+                alert("wrong google sheet url. please try again");
+                $("#save_account").val("Save");
+                $("#save_account").prop('disabled', false);
+                return;
+            }
+
+            backgroundPage.checkPromterAccount(account_name).then(res => {                
+                var newAccount = {
+                    name: account_name,
+                    gsheet: {url: gsheet_url, ...result.data},
+                    list: ac_list,
+                    checked: false,
+                    status: res.status == 200 ? "Ok" : "Failed"
+                }
+                if(editAccount == -1){
+                    backgroundPage.console.log(accountsList);
+                    accountsList.push(newAccount);
+                }
+                else{
+                    newAccount.checked = accountsList[editAccount].checked;
+                    accountsList[editAccount] = newAccount;
+                }
+    
+                popupName = "main";
+                states = states.mainState;
+                states.accountsList = accountsList;
+                $("#save_account").val("Save");
+                $("#save_account").prop('disabled', false);
+                showMainModal();
+            });
+
+        });
     });
 
     $("#back_btn").on('click', function(){
         popupName = "main";
+        states = states.mainState;
+        showMainModal();
+    });
+
+    $("#contact_refresh").on('click', function(){
+        $("#contact_list").empty().append('<option value="0" disabled>Please choose a list</option>');
+        $("#contact_refresh").hide();
+        backgroundPage.refreshACNamesList().then(res=>{
+            $("#contact_refresh").show();
+            $("#contact_list").append(
+                (res || []).map(({id, name})=>`<option value="${id}">${name}</option>`)
+            );
+            $("#contact_list").val(0);
+        });
+    });
+
+    function showMainModal(){
         $("#no_logged_in").show();
         $("#account_modal").hide();
-    });
+        $("#check_now").prop("disabled", true);
+        $("#save_btn").prop("disabled", false);
 
-    function login(result){
-        isLoged = result.isLoged;
-        if(!isLoged){
-            $("#user_login_wrapper").show();
-            $("#no_logged_in").hide();
-            $("#account_modal").hide();
-            return;
-        }
+        lastRunTime = states.lastRunTime;
+        $("#last_checked").html(lastRunTime.toLocaleString("en-US"));
+        $("#active").prop( "checked", states.isActive );
+        $("#time_interval").val( states.timeInterval );
+        $("#api_type").val( states.apiType || "none" );
+        $("#api_key").val( states.apiKey || "" );
+        $("#api_url").val( states.apiUrl || "" );
+        $("#api_type").change();
 
-        $("#user_login_wrapper").hide();
-        var state = result.state;
-        popupName = state.popupName;
-
-        switch(popupName){
-            case "main":
-                $("#no_logged_in").show();
-                $("#account_modal").hide();
-                $("#last_checked").html(result.lastChecked);
-                $("#active").prop( "checked", state.active );
-                $("#time_interval").val( state.time_interval );
-                $("#api_type").val( state.api_type || "none" );
-                $("#api_key").val( state.api_key || "" );
-                $("#api_url").val( state.api_url || "" );
-                $("#api_type").change();
-                accountList = result.accountList;
-                $.each(accountList, function(key,val){
-                    var checked = val.checked ? "checked":"";
-                    $("#account_list").append(
-                        `<div class="row d-flex mt-1"> \
-                            <div class="col-70 d-flex align-items-center"> \
-                                <input type="checkbox" id="check_${key}" ${checked} class="check-account"> \
-                                <label for="check_${key}">${key}</label> \
-                            </div> \
-                            <div class="col-20 d-flex align-items-center"> \
-                                <label>(Ok)</label> \
-                            </div> \
-                            <div class="col-10 d-flex align-items-center"> \
-                                <label class="edit-account" id="edit_${key}">Edit</label> \
-                            </div> \
-                        </div>`
-                    );
-                });
-                break;
-            case "add":
-                $("#account_modal").show();
-                $("#add_edit_label").text("Add Account");
-                $("#account_name").val(state.account_name || "");
-                $("#gsheet_url").val(state.gsheet_url || "");
-                $("#contact_list").val(state.contact_list);
-                break;
-            case "edit":                
-                $("#account_modal").show();
-                $("#add_edit_label").text("Edit Account");
-                $("#account_name").val(state.account_name || "");
-                $("#gsheet_url").val(state.gsheet_url || "");
-                $("#contact_list").val(state.contact_list);
-                break;
-            default:
-                return;
-        }
+        accountsList = states.accountsList;
+        $("#account_list").empty();
+        $.each(accountsList, function(key,val){
+            var checked = val.checked ? "checked":"";
+            $("#account_list").append(
+                `<div class="row d-flex mt-1"> \
+                    <div class="col-70 d-flex align-items-center"> \
+                        <input type="checkbox" id="check_${key}" ${checked} class="check-account"> \
+                        <label for="check_${key}">${val.name}</label> \
+                    </div> \
+                    <div class="col-20 d-flex align-items-center"> \
+                        <label>(${val.status})</label> \
+                    </div> \
+                    <div class="col-10 d-flex align-items-center"> \
+                        <label class="edit-account" id="edit_${key}">Edit</label> \
+                    </div> \
+                    <div class="col-10 d-flex align-items-center"> \
+                        <label class="delete-account" id="del_${key}">Del</label> \
+                    </div> \
+                </div>`
+            );
+        });
     }
 
-    chrome.runtime.sendMessage({ from: "popup", action: "get_laststate" }, function (response) {
-        if (chrome.runtime.lastError) return;
-        login(response);
-    });
-}
+    function showAddEditModal(){
+        accountsList = states.mainState.accountsList;
+        $("#account_modal").show();
+        $("#add_edit_label").text(popupName === "add"?"Add Account":"Edit Accont");
+        $("#account_name").val(states.account_name || "");
+        $("#gsheet_url").val(states.gsheet_url || "");
 
-window.onunload = function()
-{
-    if(!isLoged) return;
+        $("#contact_list").empty().append('<option value="0" disabled>Please choose a list</option>');
+        $("#contact_list").append(
+            backgroundPage.getACListnNames().map(({id, name})=>`<option value="${id}">${name}</option>`)
+        );
+        $("#contact_list").val(states.contact_list || 0);
+        
+        $('#contact_div').css('display', states.mainState.apiType === "none"?'none':'flex');
 
-    var lastSate = {};
+    }
+    
+    $("#user_login_wrapper").hide();
+    $("#no_logged_in").hide();
+    $("#account_modal").hide();
+
+    states = backgroundPage.getLastState();
+    
+    popupName = states.popupName;
     switch(popupName){
         case "main":
-            var api_type = $("#api_type").val();
-            lastSate = {
+            showMainModal();
+            break;
+        case "add":
+        case "edit":
+            editAccount = states.editAccount;
+            showAddEditModal();
+            break;
+        case "loading":
+            
+            break;
+        default:
+            $("#user_login_wrapper").show();
+    }
+}
+
+function getCurrentState(){
+    var lastState = {};
+
+    switch(popupName){
+        case "main":
+            api_type = $("#api_type").val();
+
+            lastState = {
                 popupName: "main",
-                active: $("#active").prop( "checked"),
-                time_interval: $("#time_interval").val(),
-                api_type: api_type
+                isActive: $("#active").prop( "checked"),
+                timeInterval: $("#time_interval").val(),
+                apiType: api_type,
+                accountsList, lastRunTime
             }
             if(api_type !== "none"){
-                lastSate["api_key"] = $("#api_key").val();
-                lastSate["api_url"] = $("#api_url").val();
+                lastState["apiKey"] = $("#api_key").val();
+                lastState["apiUrl"] = $("#api_url").val();
             }
             break;
         case "add":
         case "edit":
-            lastSate = {
-                popupName: popupName,
+            lastState = {
+                popupName, editAccount,
+                apiType: api_type,
                 account_name: $("#account_name").val(),
                 gsheet_url: $("#gsheet_url").val(),
-                contact_list: $("#contact_list").val()
+                contact_list: $("#contact_list").val(),
+                mainState: states.mainState
             }
             break;
         default:
-            return;
+            return {popupName};
     }
+    
+    return lastState;
+}
 
-    backgroundPage.saveLastState(lastSate);
+window.onunload = function()
+{
+    if(popupName == "login") return;
+    
+    backgroundPage.saveLastState( getCurrentState() );
 }

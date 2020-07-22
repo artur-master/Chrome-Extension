@@ -112,6 +112,9 @@
             display: inline-block;
         }
 
+        #check_now,
+        #save_btn,
+        #save_account,
         input[type=submit] {
             background-color: #000;
             color: white;
@@ -124,6 +127,8 @@
             display: inline-block;
         }
 
+        #check_now,
+        #save_btn,
         input[type=submit]:hover {
             background-color: #111;
         }
@@ -228,12 +233,14 @@
             display: none;
         }
 
+        .delete-account,
         .edit-account {
             text-decoration: underline;
             width: 100%;
             cursor: pointer;
             color: blue;
             text-align: right;
+            margin-left: 10px;
         }
 
         .add-account {
@@ -332,6 +339,10 @@
 <body>
     <h4>FP Affiliate Extractor</h4>
     <div class="container">
+        <div id="loading_wrapper">
+            
+        </div>
+
         <div id="user_login_wrapper">
             <div class="row">
                 <p id="login_data_err">Invalid login info</p>
@@ -341,63 +352,62 @@
         </div>
 
         <div id="no_logged_in">
-            <form action="" id="form">
-                <div class="row d-flex align-items-center">
-                    <input type="checkbox" id="active" style="margin:0; margin-right: 10px;" />
-                    <label for="active">Active:</label>
-                </div>
-                <div class="row d-flex align-items-center">
-                    <label for="time_interval" style="white-space: nowrap;">Time Interval (min):</label>
-                    <input id="time_interval" title="Time interval in minutes" type="number" value="">
-                </div>
-                <div class="account-container">
-                    <div class="row d-flex">
-                        <div class="col-70">
-                            <label >FP Accounts</label>
-                        </div>
-                        <div class="col-30">
-                            <label class="add-account" id="add_account" for="">Add Account</label>
-                        </div>
+            <div class="row d-flex align-items-center">
+                <input type="checkbox" id="active" style="margin:0; margin-right: 10px;" />
+                <label for="active">Active:</label>
+            </div>
+            <div class="row d-flex align-items-center">
+                <label for="time_interval" style="white-space: nowrap;">Time Interval (min):</label>
+                <input id="time_interval" title="Time interval in minutes" type="number" value="">
+            </div>
+            <div class="account-container">
+                <div class="row d-flex">
+                    <div class="col-70">
+                        <label >FP Accounts</label>
                     </div>
-                    <div id="account_list"></div>
-                </div>
-                <div class="api-container">
-                    <div class="row">
-                        <div class="col-100">
-                            <label for="api_type">API Integration</label>
-                        </div>
-                        <div class="col-100">
-                            <select id="api_type" style="height: 35px; width: 88%;">
-                                <option value="none" selected>None</option>
-                                <option value="ac">Active Campaign</option>
-                            </select>
-                            <label class="editcampaign" id="campaign_edit" for="">Edit</label>
-                        </div>
-                    </div>
-                    <div class="row apirow">
-                        <div class="col-30">
-                            <label for="api_key">API Key</label>
-                        </div>
-                        <div class="col-70">
-                            <input id="api_key" title="Your API key" type="text" value="" placeholder="Your API key">
-                        </div>
-                    </div>
-                    <div class="row apirow">
-                        <div class="col-30">
-                            <label for="api_url">API Url</label>
-                        </div>
-                        <div class="col-70">
-                            <input id="api_url" title="Your API Url" type="text" value="" placeholder="Your API Url">
-                        </div>
+                    <div class="col-30">
+                        <label class="add-account" id="add_account" for="">Add Account</label>
                     </div>
                 </div>
+                <div id="account_list"></div>
+            </div>
+            <div class="api-container">
                 <div class="row">
-                    <input type="submit" value="Check now" id="save" style="width: 48%;">
-                    <input type="submit" value="Save" id="save2" style="width: 50%;float: right">
-                    <div style="margin-top: 20px;">
-                        Last checked: <span id="last_checked"></span>
+                    <div class="col-100">
+                        <label>API Integration</label>
+                    </div>
+                    <div class="col-100">
+                        <select id="api_type" style="height: 35px; width: 88%;">
+                            <option value="none" selected>None</option>
+                            <option value="ac">Active Campaign</option>
+                        </select>
+                        <label class="editcampaign" id="campaign_edit" for="">Edit</label>
                     </div>
                 </div>
+                <div class="row apirow">
+                    <div class="col-30">
+                        <label for="api_key">API Key</label>
+                    </div>
+                    <div class="col-70">
+                        <input id="api_key" title="Your API key" type="text" value="" placeholder="Your API key">
+                    </div>
+                </div>
+                <div class="row apirow">
+                    <div class="col-30">
+                        <label for="api_url">API Url</label>
+                    </div>
+                    <div class="col-70">
+                        <input id="api_url" title="Your API Url" type="text" value="" placeholder="Your API Url">
+                    </div>
+                </div>
+            </div>
+            <div class="row d-flex align-items-center">
+                <input type="button" value="Check now" id="check_now" style="width:90px"/>
+                <input type="button" value="Save" id="save_btn" style="width:90px" />
+            </div>
+            <div style="margin-top: 20px;">
+                Last checked: <span id="last_checked"></span>
+            </div>
                 <!-- <div class="row">
                     <label style="padding-bottom: 2px;">Check out my links below:</label>
                     <hr>
@@ -405,7 +415,7 @@
                         <a href="https://smartbusinesstrends.com">Chris Fong</a> | <a href="https://sbt.link/fbgroup/lmaffiliateextractor">Join the FB Group</a> | <a href="https://smartbusinesstrends.com/contact-us">Get Support</a>
                     </div>
                 </div> -->
-            </form>
+            
         </div>
 
         <div id="account_modal">
@@ -428,20 +438,19 @@
                 <input id="gsheet_url" type="text" value="" placeholder="https://docs.google.com/spreadsheets/...">
                 <p id="google_sheet_err"></p>
 
-                <div class="row d-flex align-items-center mt-1">
+                <div id="contact_div" class="row align-items-center mt-1">
                     <div class="col-30">
                         <label>Add to List:</label>
                     </div>
                     <div class="col-70">
                         <select id="contact_list" style="height: 35px; width: 80%;">
-                            <option value="0">Please choose a list</option>
+                            <option value="0" disabled>Please choose a list</option>
                         </select>
-                        <label id="contact_refresh" for="contact_list"
-                            style="width: 10%; cursor: pointer;margin-left: 10px; font-size: 18px;">&#x21bb;</label>
+                        <label id="contact_refresh" style="width: 10%; cursor: pointer;margin-left: 10px; font-size: 18px;">&#x21bb;</label>
                     </div>
                 </div>
                 <div class="row">
-                    <input type="submit" value="Save" style="width: 20%;float: left;" />
+                    <input type="button" id="save_account" value="Save" style="width: 20%;float: left;" />
                     <p id="back_btn" style="width:20%;float:right;margin-top:30px;border:1px solid;cursor: pointer;text-align: center;">Back</p>
                 </div>
                 <!-- <div class="row">
