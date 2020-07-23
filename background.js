@@ -132,6 +132,7 @@ function saveSpreadSheet(res, account){
         }
         // update rows
         function updateRows(updatedRows) {
+            console.log(updatedRows);
             let body = {
                 "valueInputOption": "RAW",
                 "includeValuesInResponse": false,
@@ -157,8 +158,9 @@ function saveSpreadSheet(res, account){
 }
 
 async function startWorking() {
+    var num = 0;
     await asyncForEach(accountsList, (account)=>{
-        timers.push(setInterval(() => {
+        timers[num] = (setInterval(() => {
             if(account.checked && isActive){
                 getSpreadSheet(account.gsheet.url).then(res=>{
                     if(res.status) {
@@ -171,6 +173,8 @@ async function startWorking() {
                 });
             }
         }, timeInterval * 60 * 1000));
+
+        num++;
     });
 }
 
@@ -191,10 +195,8 @@ async function checkState(loop=false){
     if(loop == false){ //if CheckNow
         var csv_data = [];
         if(DEBUB_MODE) csv_data = await getCSVData();
-        timers = [];
-        var timer = 0;
         await asyncForEach(accountsList, account=>{
-            timers[timer] = setTimeout(() => {
+            setTimeout(() => {
                 if(account.checked){
                     getSpreadSheet(account.gsheet.url).then(res=>{
                         if(res.status) {
@@ -367,7 +369,7 @@ function getPromoterList(account, page, table, updatedRows){
                         updatedRows.push({
                             "range": `A${index+1}:G${index+1}`,
                             "majorDimension": "ROWS",
-                            "values": [email, date, state]
+                            "values": [[email, date, state]]
                         });
 
                         if(apiType !== "none") await saveToActiveCompain(email, date, state, account);
