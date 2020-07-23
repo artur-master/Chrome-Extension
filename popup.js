@@ -13,7 +13,7 @@ function validEmail(email) {
     return re.test(email);
 };
 // onLoad
-window.onload = function() 
+window.onload = async function() 
 {
     $("#login_action").on("click", async function(){
         $("#login_data_err").hide();
@@ -32,7 +32,7 @@ window.onload = function()
         var result = await backgroundPage.onActiveLogin(email, true);
         
         $("#login_action").prop('value', "Activate App");
-        if(result.state){
+        if(result.status){
             states = result.data;
             showMainModal();
         }
@@ -145,7 +145,7 @@ window.onload = function()
             $("#google_sheet_err").show();
             $("#google_sheet_err").text("Please add google sheet url.");
         }
-        if(ac_list == null){
+        if(states.mainState.apiType == "ac" && ac_list == null){
             invalid = true;
             alert("please select AC list");
         }
@@ -170,7 +170,7 @@ window.onload = function()
                     status: res.status == 200 ? "Ok" : "Failed"
                 }
                 if(editAccount == -1){
-                    backgroundPage.console.log(accountsList);
+                    if (accountsList == undefined) accountsList=[];
                     accountsList.push(newAccount);
                 }
                 else{
@@ -208,6 +208,7 @@ window.onload = function()
     });
 
     function showMainModal(){
+        $("#user_login_wrapper").hide();
         $("#no_logged_in").show();
         $("#account_modal").hide();
         $("#check_now").prop("disabled", true);
@@ -266,8 +267,15 @@ window.onload = function()
     $("#user_login_wrapper").hide();
     $("#no_logged_in").hide();
     $("#account_modal").hide();
-
+    $("#loading_wrapper").hide();
+    
     states = backgroundPage.getLastState();
+    if(states.popupName=="loading"){
+        $("#loading_wrapper").show();
+        await backgroundPage.onActiveLogin(states.email, false);
+        states = backgroundPage.getLastState();
+        $("#loading_wrapper").hide();
+    }
     
     popupName = states.popupName;
     switch(popupName){
@@ -278,9 +286,6 @@ window.onload = function()
         case "edit":
             editAccount = states.editAccount;
             showAddEditModal();
-            break;
-        case "loading":
-            
             break;
         default:
             $("#user_login_wrapper").show();
@@ -326,7 +331,7 @@ function getCurrentState(){
 
 window.onunload = function()
 {
-    if(popupName == "login") return;
+    if(popupName == "login" || popupName == "loading") return;
     
     backgroundPage.saveLastState( getCurrentState() );
 }

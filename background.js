@@ -1,10 +1,8 @@
 var ajaxurlpagepath = "http://popposts.com/dashboard/lmaffiliate/api/";
-var BASE_URL = "https://office.legendarymarketer.com/affiliate/members/export?product=&subscription=&customize=&from=&to=";
-var LEADS_URL = "https://office.legendarymarketer.com/affiliate/leads/export?funnel=&tag=&customize=&from=&to=";
 // var LOGIN_URL = "office.legendarymarketer.com/login";
 
 var DEFAULT_TIME_INTERVAL = 60;
-var debug_flag = 1;      // debug mode: 1, active: 0
+var DEBUB_MODE = 0;      // debug mode: 1, active: 0
 var customFieldId = null;
 
 var isActive = false;
@@ -21,9 +19,10 @@ var lastState = { popupName:"loading" };
 var valuesOfSheet = {};
 var newRowsOfSheetNumber = {};
 
+var timers = [];
+
 chrome.storage.local.get({"email": ""}, function (res) {
-    if(res.email === "") lastState = { popupName:"login" }
-    else onActiveLogin(res.email, false);
+    lastState = (res.email === "") ? { popupName:"login" } : {popupName: "loading", email: res.email};
 });
 
 function onActiveLogin (email, saveEmail=true) {
@@ -82,24 +81,9 @@ function saveData(data, saveStore=true) {
     }
 }
 
-function allTimersClear() {
-    window.originalSetTimeout = window.setTimeout;
-    window.originalClearTimeout = window.clearTimeout;
-    window.activeTimers = 0;
-
-    // window.setTimeout = function(func, delay) {
-    //     window.activeTimers++;
-    //     console.log(window.activeTimers, "1");
-    //     return window.originalSetTimeout(func, delay);
-    // };
-
-    window.clearTimeout = function(timerID) {
-        window.activeTimers--;
-        console.log(window.activeTimers, "2");
-        window.originalClearTimeout(timerID);
-    };
-
-    return window.activeTimers;
+async function allTimersClear() {
+    await asyncForEach(timers, timer => clearTimeout(timer));
+    timers = [];
 }
 
 async function asyncForEach(array, callback) {
@@ -109,7 +93,7 @@ async function asyncForEach(array, callback) {
 }
 
 function saveSpreadSheet(res, account){
-    chrome.identity.getAuthToken({ interactive: true }, function (token) {
+    chrome.identity.getAuthToken({ interactive: true }, async function (token) {
         var spreadsheetId = convertUrlToSheetId(account.gsheet.url);
         
         async function insertNewRows(table) {
@@ -172,10 +156,10 @@ function saveSpreadSheet(res, account){
     });
 }
 
-async function startWorking(loop) {
+async function startWorking() {
     await asyncForEach(accountsList, (account)=>{
-        if(account.checked){
-            setTimeout(() => {
+        timers.push(setInterval(() => {
+            if(account.checked && isActive){
                 getSpreadSheet(account.gsheet.url).then(res=>{
                     if(res.status) {
                         account.gsheet.id = res.data.id;
@@ -185,27 +169,9 @@ async function startWorking(loop) {
                         });
                     }
                 });
-            }, 0);
-        }
-    });
-
-    if(loop){
-        await asyncForEach(accountsList, (account)=>{
-            if(account.checked){
-                setTimeout(() => {
-                    getSpreadSheet(account.gsheet.url).then(res=>{
-                        if(res.status) {
-                            account.gsheet.id = res.data.id;
-                            account.gsheet.title = res.data.title;
-                            getPromoterList(account, 1, "<table>", []).then(res=>{
-                                saveSpreadSheet(res, account);
-                            });
-                        }
-                    });
-                }, timeInterval * 60 * 1000);
             }
-        });
-    }
+        }, timeInterval * 60 * 1000));
+    });
 }
 
 async function checkState(loop=false){
@@ -220,7 +186,37 @@ async function checkState(loop=false){
         account.status = (res.status == 200) ? "Ok" : "Failed";
     });
 
-    if( allTimersClear() == 0) startWorking(loop);
+    await allTimersClear();
+    
+    if(loop == false){ //if CheckNow
+        var csv_data = [];
+        if(DEBUB_MODE) csv_data = await getCSVData();
+        timers = [];
+        var timer = 0;
+        await asyncForEach(accountsList, account=>{
+            timers[timer] = setTimeout(() => {
+                if(account.checked){
+                    getSpreadSheet(account.gsheet.url).then(res=>{
+                        if(res.status) {
+                            account.gsheet.id = res.data.id;
+                            account.gsheet.title = res.data.title;
+                            if(DEBUB_MODE){
+                                getCSVList(account, csv_data).then(res=>{
+                                    saveSpreadSheet(res, account);
+                                });
+                            } else {
+                                getPromoterList(account, 1, "<table>", []).then(res=>{
+                                    saveSpreadSheet(res, account);
+                                });
+                            }
+                        }
+                    });
+                }
+            }, 0);
+        });
+    }
+    
+    if(loop && isActive) startWorking();
 
     lastRunTime = new Date();
     
@@ -312,6 +308,8 @@ function checkPromterAccount(account){
 }
 
 async function saveToActiveCompain(email, date, state, account){
+    if(account.list == null) return false;
+
     function getContactFieldId(email){
         return fetch(`${apiUrl}/api/3/contact/sync`, {method: 'POST', headers: {'Api-Token': apiKey, 'Accept': '*\/*'}, body: JSON.stringify({"contact":{email:email}}), contentType: 'json'})
                .then(response => response.json()).then(res=>res.contact.id);
@@ -360,6 +358,7 @@ function getPromoterList(account, page, table, updatedRows){
                 email = $(email).text().trim();
                 date = $(date).text().trim();
                 state = $(state).text().trim();
+                state = (state === "Not a customer yet") ? "Free" : "Paid";
 
                 var index = myValueOfSheet.findIndex((value)=>value[0]===email);
                 if(index > -1){
@@ -388,6 +387,58 @@ function getPromoterList(account, page, table, updatedRows){
 
             return getPromoterList(account, page+1, table, updatedRows);
         }
+    });
+}
+
+async function getCSVList(account, csv_data) {
+    var spreadSheetId = convertUrlToSheetId(account.gsheet.url);
+    var myValueOfSheet = valuesOfSheet[spreadSheetId];
+    var table = "<table>";
+    var updatedRows = [];
+    await asyncForEach(csv_data, async (csv)=>{
+        let email = csv[0];
+        let date = csv[1];
+        let state = csv[2];
+        state = (state === "Not a customer yet") ? "Free" : "Paid";
+
+        var index = myValueOfSheet.findIndex((value)=>value[0]===email);
+        if(index > -1){
+            if(myValueOfSheet[index][2] !== state){
+                myValueOfSheet[index][2] = state;
+                updatedRows.push({
+                    "range": `A${index+1}:G${index+1}`,
+                    "majorDimension": "ROWS",
+                    "values": [email, date, state]
+                });
+
+                if(apiType !== "none") await saveToActiveCompain(email, date, state, account);
+            }
+        } else {
+            myValueOfSheet.push([email, date, state]);
+
+            table += `<tr>
+                        <td style='border-right:1px solid black'>${email}</td>
+                        <td style='border-right:1px solid black'>${date}</td>
+                        <td style='border-right:1px solid black'>${state}</td>
+                    </tr>`;
+            
+            if(apiType !== "none") await saveToActiveCompain(email, date, state, account);
+        }
+    });
+    table += "</table>";
+
+    return ({table, updatedRows});
+}
+
+function getCSVData(){
+    return fetch("test.csv").then(csvdata=>csvdata.text()).then(csvdata =>{
+        var csv_data = csvdata.split(/\r?\n|\r/);
+        var data = [];
+        csv_data.forEach(row_data => {
+            var cell_data = row_data.split(',');
+            data.push(cell_data);
+        });
+        return data;
     });
 }
 
