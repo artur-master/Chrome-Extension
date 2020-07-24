@@ -1,9 +1,9 @@
 {
   "name": "FP Affiliate Extractor",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmgCp+6qgWnbkDn0to2bGTvPHSp36FH+KqRpC2+oCYUgsg9nMV4X2SIEEUYDYAqxsEILCw0ihr/oNt/Ma5KPppw5NLEiz+vyVxF3Vqw3CREmQDUxZGTzNnuZFz8LAkMkbrnpMJJhLbXnfxvyd+uymhYxMIn34sJZVYbU+RhoUgIwsQNmJuLSdTnQXdmc6YENeG7AVRbLA/joePSJxrXN3HTqGmS/ah0dmJirG/u6Eo9/JF6CAJWCcK/kt4RGkGiehf6LAUo9hxIyWJejfEzCeiHbq9/8rarVfoE8FLgVLYN3DdDj7kMpBvw7yiTtiDDg6MRG+Isr1tLQjd3kelLLOoQIDAQAB",
-  "version": "1.0.19",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0ypq7k/Lj6Rvj/scXjFi3mekVWeLIw/3IEClzMAfQGPvNmWqMCEX7x5YtCCFVTjpktajrNj08XgWxLJ6uUaGGv6i4MZkVpb1UG/VTXlzhNM09saDJ47V6Q6IIYh7vkwcUJ9Gcy6W4vjmJVbPERCfu3HqB2zrJqPkWcuPU6mZL9+HEq4Dg6Wug31MwqJKNoAs4R7+g9aHL/S0IC9vo3lWwQ5pbiFvDXSrSaZ043hRXUIdnhV2XPZpqQutrlNQnAnYtcbkSOGDzvfRA2Ausqs3uftycUbt4gN+3X5GsdYeX2vbzUtwre+7Ht48F5cdRbJ61tmS9RwMkGg0K8QXzXe6nwIDAQAB",
+  "version": "1.0.0",
   "manifest_version": 2,
-  "description": "Pushes user's Legendary Marketer affiliate data to Google Sheet",
+  "description": "Pushes user's First Promoter data to Google Sheet",
   "icons": {
     "16": "icon/icon16x16.png",
     "48": "icon/icon48x48.png",
@@ -21,7 +21,7 @@
     "persistent": true
   },
   "oauth2": {
-    "client_id": "632252172393-nei8md54nqmu5qf06jfre5uclb73su7r.apps.googleusercontent.com",
+    "client_id": "289844448623-f85hrjoc2l48qc53jcv60ue7vfi491nh.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/spreadsheets"
     ]

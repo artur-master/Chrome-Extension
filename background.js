@@ -179,9 +179,9 @@ async function startWorking() {
 }
 
 async function checkState(loop=false){
-    var listChecked = false;
+    // var listChecked = false;
     if(apiType !== "none" && apiUrl !== "" && apiKey !== ""){
-        listChecked = await setACNamesList(apiUrl, apiKey);
+        await setACNamesList(apiUrl, apiKey);
         customFieldId = await getCustomFieldId();
     }
     
@@ -216,6 +216,7 @@ async function checkState(loop=false){
                 }
             }, 0);
         });
+        loop = true;
     }
     
     if(loop && isActive) startWorking();
@@ -231,7 +232,7 @@ function getACListnNames(){
 
 function setACNamesList(url, key){
     acNamesList = [];
-    return fetch(`${url}/api/3/lists`,{
+    return fetch(`${url}/api/3/lists?limit=all`,{
         method: 'GET',
         headers: {'Api-Token': key,'Accept': '*\/*'},
         contentType: 'json'
@@ -273,8 +274,8 @@ function convertUrlToSheetId(sheetUrl) {
 }
 
 function getSpreadSheet(sheetUrl) {
-    var arr = sheetUrl.match(/spreadsheets\/d\/([a-z0-9_-]{40,})/i);
     return new Promise(resolve=>{
+        var arr = sheetUrl.match(/spreadsheets\/d\/([a-z0-9_-]{40,})/i);
         if (arr == null || arr.length<1) resolve({status:false, error: "Wrong Sheets URL"});
 
         var spreadsheetId = arr[1];

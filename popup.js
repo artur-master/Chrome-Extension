@@ -1,6 +1,6 @@
 var backgroundPage = chrome.extension.getBackgroundPage();
 
-var accountsList, lastRunTime;
+var accountsList;
 
 var popupName = "login";
 var api_type = "none";
@@ -34,6 +34,7 @@ window.onload = async function()
         $("#login_action").prop('value', "Activate App");
         if(result.status){
             states = result.data;
+            popupName = "main";
             showMainModal();
         }
         else{
@@ -155,9 +156,10 @@ window.onload = async function()
         $("#save_account").prop('disabled', true);
         backgroundPage.getSpreadSheet(gsheet_url).then(result=>{
             if(!result.status){
-                alert("wrong google sheet url. please try again");
+                alert(result.error);
                 $("#save_account").val("Save");
                 $("#save_account").prop('disabled', false);
+                
                 return;
             }
 
@@ -184,8 +186,9 @@ window.onload = async function()
                 $("#save_account").val("Save");
                 $("#save_account").prop('disabled', false);
                 showMainModal();
-            });
-
+            })
+        }).catch((e)=>{
+            showAddEditModal();
         });
     });
 
@@ -214,8 +217,7 @@ window.onload = async function()
         $("#check_now").prop("disabled", true);
         $("#save_btn").prop("disabled", false);
 
-        lastRunTime = states.lastRunTime;
-        $("#last_checked").html(lastRunTime.toLocaleString("en-US"));
+        $("#last_checked").html(states.lastRunTime.toLocaleString("en-US"));
         $("#active").prop( "checked", states.isActive );
         $("#time_interval").val( states.timeInterval );
         $("#api_type").val( states.apiType || "none" );
@@ -276,7 +278,7 @@ window.onload = async function()
         states = backgroundPage.getLastState();
         $("#loading_wrapper").hide();
     }
-    
+
     popupName = states.popupName;
     switch(popupName){
         case "main":
@@ -300,11 +302,12 @@ function getCurrentState(){
             api_type = $("#api_type").val();
 
             lastState = {
+                ...states,
                 popupName: "main",
                 isActive: $("#active").prop( "checked"),
                 timeInterval: $("#time_interval").val(),
                 apiType: api_type,
-                accountsList, lastRunTime
+                accountsList,
             }
             if(api_type !== "none"){
                 lastState["apiKey"] = $("#api_key").val();
