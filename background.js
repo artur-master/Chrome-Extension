@@ -353,7 +353,7 @@ function getPromoterList(account, page, table, updatedRows){
             return {table, updatedRows};
         } else {
             var spreadSheetId = convertUrlToSheetId(account.gsheet.url);
-            var myValueOfSheet = valuesOfSheet[spreadSheetId];
+            var myValueOfSheet = valuesOfSheet[spreadSheetId] || [];
             await asyncForEach(doms, async (dom)=>{
                 let email = $(dom).find('.col-email')[0];
                 let date = $(dom).find('.col-created')[0];
