@@ -167,6 +167,10 @@ async function startWorking() {
                         account.gsheet.id = res.data.id;
                         account.gsheet.title = res.data.title;
                         getPromoterList(account, 1, "<table>", []).then(res=>{
+                            if(res.error === "login"){
+                                alert("You need to login promoter account");
+                                return;
+                            }
                             saveSpreadSheet(res, account);
                         });
                     }
@@ -208,6 +212,10 @@ async function checkState(loop=false){
                                 });
                             } else {
                                 getPromoterList(account, 1, "<table>", []).then(res=>{
+                                    if(res.error === "login"){
+                                        alert("You need to login promoter account");
+                                        return;
+                                    }
                                     saveSpreadSheet(res, account);
                                 });
                             }
@@ -346,6 +354,10 @@ function getPromoterList(account, page, table, updatedRows){
     var url = `https://${account.name}.firstpromoter.com/my-leads?page=${page}`;
     
     return fetch(url).then(res=>res.text()).then(async (response) => {
+        if(response.indexOf('You are not logged in.')>-1){
+            return {error: "login"}
+        }
+
         let doms = $(response).find("tr[data-id]");
         
         if(doms.length == 0){
