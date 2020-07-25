@@ -44,7 +44,7 @@ function getSavedData() {
     return new Promise(resolve=>{
         chrome.storage.local.get({
             isActive:false,
-            timeInterval:0,
+            timeInterval:DEFAULT_TIME_INTERVAL,
             apiType:"none", 
             apiUrl:"",
             apiKey:"",
