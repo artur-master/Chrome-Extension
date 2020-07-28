@@ -13,6 +13,7 @@ var accountsList = [];
 var lastRunTime = 0;
 
 var acNamesList = [];
+var customFieldList = [];
 
 var lastState = { popupName:"loading" };
 
@@ -186,7 +187,7 @@ async function checkState(loop=false){
     // var listChecked = false;
     if(apiType !== "none" && apiUrl !== "" && apiKey !== ""){
         await setACNamesList(apiUrl, apiKey);
-        customFieldId = await getCustomFieldId();
+        await setCustomFieldList(apiUrl, apiKey);
     }
     
     await asyncForEach(accountsList, async (account)=>{
@@ -199,8 +200,9 @@ async function checkState(loop=false){
     if(loop == false){ //if CheckNow
         var csv_data = [];
         if(DEBUB_MODE) csv_data = await getCSVData();
+        var num = 0;
         await asyncForEach(accountsList, account=>{
-            setTimeout(() => {
+            timers[num] = setTimeout(() => {
                 if(account.checked){
                     getSpreadSheet(account.gsheet.url).then(res=>{
                         if(res.status) {
@@ -223,18 +225,19 @@ async function checkState(loop=false){
                     });
                 }
             }, 0);
+            
+            num++;
         });
-        loop = true;
     }
     
-    if(loop && isActive) startWorking();
+    if(isActive) startWorking();
 
     lastRunTime = new Date();
     
     return ({popupName:"main",isActive, timeInterval, apiType, apiUrl, apiKey, accountsList, lastRunTime});
 }
 
-function getACListnNames(){
+function getACListNames(){
     return acNamesList;
 }
 
@@ -256,25 +259,36 @@ function setACNamesList(url, key){
     });
 }
 
-async function getCustomFieldId(){
-    var body = { "type": "text","title": "FP_status", "descript": "FP_status","isrequired": 0, "perstag": "FP_status", "defval": "",  "visible": 1, "ordernum": 1 }
-    let re = await fetch(`${apiUrl}/api/3/fields`, {method: 'POST', headers: {'Api-Token': apiKey, 'Accept': '*\/*'}, body: JSON.stringify({"field": body}), contentType: 'json'})
-
-    switch(re.status){
-        case 201:
-            return await re.json().then(res=>(res.field.id));
-        case 422:
-            let getRe = await fetch(`${apiUrl}/api/3/fields?filters[title]=FP_status`, {headers: {'Api-Token': apiKey,'Accept': '*\/*' }, contentType: 'json'})
-                              .then(re=>re.json());
-            return getRe.fields[0].id;
-        default:
-            return null;
-    }    
-}
-
 async function refreshACNamesList(){
     await setACNamesList(apiUrl, apiKey);
     return acNamesList;
+}
+
+function setCustomFieldList(url, key){
+    customFieldList = [];
+    return fetch(`${url}/api/3/fields?limit=all`,{
+        method: 'GET',
+        headers: {'Api-Token': key,'Accept': '*\/*'},
+        contentType: 'json'
+    }).then(response => response.json()).then(re => {
+        re.fields.forEach(({id, title})=>{
+            customFieldList.push({id, title});
+        });
+        
+        return true;
+    }).catch(()=>{
+        alert("Please type real API_KEY or API_URL");
+        return false;
+    });
+}
+
+function getCustomFields() {    
+    return customFieldList;
+}
+
+async function refreshCustomList(){
+    await setCustomFieldList(apiUrl, apiKey);
+    return customFieldList;
 }
 
 function convertUrlToSheetId(sheetUrl) {
@@ -333,14 +347,14 @@ async function saveToActiveCompain(email, date, state, account){
                 headers: {'Api-Token': apiKey, 'Accept': '*\/*'},
                 body: JSON.stringify({"contactList":contactList}),
                 contentType: 'json'
-            });
+        });
     }
 
     let contactFieldId = await getContactFieldId(email);
 
     contactToList(contactFieldId, account.list);
     
-    let fieldValue = { "contact": contactFieldId,"field": customFieldId, "value":state}
+    let fieldValue = { "contact": contactFieldId,"field": account.field, "value":state}
 
     return fetch(`${apiUrl}/api/3/fieldValues`, {
             method: 'POST',

@@ -448,19 +448,32 @@
                 <input id="gsheet_url" type="text" value="" placeholder="https://docs.google.com/spreadsheets/...">
                 <p id="google_sheet_err"></p>
 
-                <div id="contact_div" class="row align-items-center mt-1">
-                    <div class="col-30">
-                        <label>Add to List:</label>
+                <div id="contact_div" class="mt-1">
+                    <div class="row align-items-center">
+                        <div class="col-30">
+                            <label>Add to List:</label>
+                        </div>
+                        <div class="col-70">
+                            <select id="contact_list" style="height: 35px; width: 80%;">
+                                <option value="0" disabled>Please choose a list</option>
+                            </select>
+                            <label id="contact_refresh" style="width: 10%; cursor: pointer;margin-left: 10px; font-size: 18px;">&#x21bb;</label>
+                        </div>
                     </div>
-                    <div class="col-70">
-                        <select id="contact_list" style="height: 35px; width: 80%;">
-                            <option value="0" disabled>Please choose a list</option>
-                        </select>
-                        <label id="contact_refresh" style="width: 10%; cursor: pointer;margin-left: 10px; font-size: 18px;">&#x21bb;</label>
+                    <div class="row align-items-center">
+                        <div class="col-30">
+                            <label>Set AC Custom Field:</label>
+                        </div>
+                        <div class="col-70">
+                            <select id="custom_field" style="height: 35px; width: 80%;">
+                                <option value="0" disabled>Please choose a field</option>
+                            </select>
+                            <label id="field_refresh" style="width: 10%; cursor: pointer;margin-left: 10px; font-size: 18px;">&#x21bb;</label>
+                        </div>
                     </div>
                 </div>
                 <div class="row">
-                    <input type="button" id="save_account" value="Save" style="width: 20%;float: left;" />
+                    <input type="button" id="save_account" value="Save Account" style="width: 30%;float: left;" />
                     <p id="back_btn" style="width:20%;float:right;margin-top:30px;border:1px solid;cursor: pointer;text-align: center;">Back</p>
                 </div>
                 <!-- <div class="row">

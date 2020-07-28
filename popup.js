@@ -44,6 +44,7 @@ window.onload = async function()
     });
 
     $("#save_btn").on("click", function(){
+        $("#save_btn").prop("disabled", true);
         $("#check_now").prop("disabled", false);
         var active = $("#active").prop( "checked");
         var interval = $("#time_interval").val() || 0;
@@ -84,7 +85,14 @@ window.onload = async function()
 
     $("#api_type").on("change", function(event){
         api_type = event.target.value;
-        $('.apirow').css('display', api_type === "none"?'none':'block');        
+        $('.apirow').css('display', api_type === "none"?'none':'block');
+        $("#check_now").css('display', true);
+        $("#save_btn").css('display', false);
+    });
+
+    $("#api_key #api_url #time_interval").on("change", function(){
+        $("#check_now").css('display', true);
+        $("#save_btn").css('display', false);
     });
 
     $("#add_account").on("click", function(){
@@ -133,6 +141,7 @@ window.onload = async function()
         var account_name = $("#account_name").val().trim();
         var gsheet_url = $("#gsheet_url").val().trim();
         var ac_list = $("#contact_list").val();
+        var custom_field = $("#custom_field").val();
         
         var invalid = false;
         $("#account_name_err").hide(); $("#google_sheet_err").hide();
@@ -146,9 +155,10 @@ window.onload = async function()
             $("#google_sheet_err").show();
             $("#google_sheet_err").text("Please add google sheet url.");
         }
-        if(states.mainState.apiType == "ac" && ac_list == null){
+        if(states.mainState.apiType == "ac"){
             invalid = true;
-            alert("please select AC list");
+            if(ac_list == null) {alert("Please select AC list");return}
+            if(custom_field == null) alert("Please select a custom field for contact status");
         }
 
         if(invalid) return;
@@ -157,7 +167,7 @@ window.onload = async function()
         backgroundPage.getSpreadSheet(gsheet_url).then(result=>{
             if(!result.status){
                 alert(result.error);
-                $("#save_account").val("Save");
+                $("#save_account").val("Save Account");
                 $("#save_account").prop('disabled', false);
                 
                 return;
@@ -168,6 +178,7 @@ window.onload = async function()
                     name: account_name,
                     gsheet: {url: gsheet_url, ...result.data},
                     list: ac_list,
+                    field: custom_field,
                     checked: false,
                     status: res.status == 200 ? "Ok" : "Failed"
                 }
@@ -183,8 +194,11 @@ window.onload = async function()
                 popupName = "main";
                 states = states.mainState;
                 states.accountsList = accountsList;
-                $("#save_account").val("Save");
+                $("#save_account").val("Save Account");
                 $("#save_account").prop('disabled', false);
+                $("#save_btn").prop('disabled', false);
+                $("#check_now").prop('disabled', true);
+
                 showMainModal();
             })
         }).catch((e)=>{
@@ -207,6 +221,18 @@ window.onload = async function()
                 (res || []).map(({id, name})=>`<option value="${id}">${name}</option>`)
             );
             $("#contact_list").val(0);
+        });
+    });
+
+    $("#field_refresh").on('click', function(){
+        $("#custom_field").empty().append('<option value="0" disabled>Please choose a list</option>');
+        $("#field_refresh").hide();
+        backgroundPage.refreshCustomList().then(res=>{
+            $("#field_refresh").show();
+            $("#custom_field").append(
+                (res || []).map(({id, title})=>`<option value="${id}">${title}</option>`)
+            );
+            $("#custom_field").val(0);
         });
     });
 
@@ -258,11 +284,17 @@ window.onload = async function()
 
         $("#contact_list").empty().append('<option value="0" disabled>Please choose a list</option>');
         $("#contact_list").append(
-            backgroundPage.getACListnNames().map(({id, name})=>`<option value="${id}">${name}</option>`)
+            backgroundPage.getACListNames().map(({id, name})=>`<option value="${id}">${name}</option>`)
         );
         $("#contact_list").val(states.contact_list || 0);
         
-        $('#contact_div').css('display', states.mainState.apiType === "none"?'none':'flex');
+        $("#custom_field").empty().append('<option value="0" disabled>Please choose a field</option>');
+        $("#custom_field").append(
+            backgroundPage.getCustomFields().map(({id, title})=>`<option value="${id}">${title}</option>`)
+        );
+        $("#custom_field").val(states.custom_field || 0);
+        
+        $('#contact_div').css('display', states.mainState.apiType === "none"?'none':'block');
 
     }
     
@@ -322,6 +354,7 @@ function getCurrentState(){
                 account_name: $("#account_name").val(),
                 gsheet_url: $("#gsheet_url").val(),
                 contact_list: $("#contact_list").val(),
+                custom_field: $("#custom_field").val(),
                 mainState: states.mainState
             }
             break;
