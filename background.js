@@ -102,7 +102,7 @@ function saveSpreadSheet(res, account){
             return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(account.gsheet.title)}`,init)
                    .then(resp=>resp.json()).then(data=>{
 
-                var lastSheetRow = data.values.length; 
+                var lastSheetRow = (data.values || []).length; 
                 
                 let requests = [
                     {
@@ -421,7 +421,7 @@ function getPromoterList(account, page, table, updatedRows){
 
 async function getCSVList(account, csv_data) {
     var spreadSheetId = convertUrlToSheetId(account.gsheet.url);
-    var myValueOfSheet = valuesOfSheet[spreadSheetId];
+    var myValueOfSheet = valuesOfSheet[spreadSheetId] || [];
     var table = "<table>";
     var updatedRows = [];
     await asyncForEach(csv_data, async (csv)=>{

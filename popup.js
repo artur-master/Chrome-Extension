@@ -156,9 +156,14 @@ window.onload = async function()
             $("#google_sheet_err").text("Please add google sheet url.");
         }
         if(states.mainState.apiType == "ac"){
-            invalid = true;
-            if(ac_list == null) {alert("Please select AC list");return}
-            if(custom_field == null) alert("Please select a custom field for contact status");
+            if(ac_list == null) {
+                invalid = true;
+                alert("Please select AC list");return;
+            }
+            if(custom_field == null){                
+                invalid = true;
+                alert("Please select a custom field for contact status");
+            }
         }
 
         if(invalid) return;
